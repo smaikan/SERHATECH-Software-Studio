@@ -1,0 +1,106 @@
+/* Serhatech, Holo Atölye tasarım değişkenleri.
+   gündüz: aydınlık bir mühendislik atölyesi. bay: ışığı kısılmış projeksiyon odası. */
+
+/* kendi sunduğumuz font yüklenirken arial, archivo'nun ölçülerine göre ayarlanıyor
+   (layout.tsx). */
+@font-face {
+  font-family: "Archivo Fallback";
+  src: local("Arial");
+  ascent-override: 88.96%;
+  descent-override: 21.28%;
+  line-gap-override: 0%;
+  size-adjust: 98.7%;
+}
+
+:root {
+  /* Gündüz */
+  --day-bg: #eef1f4;
+  --day-surface: #ffffff;
+  --day-panel: #e3e8ed;
+  --ink: #0d1621;
+  --ink-soft: #2a3846;
+  --ink-muted: #4a5866;
+  --blueprint: #1d4e6e;
+  --day-line: rgba(29, 78, 110, 0.18);
+  --day-line-strong: rgba(29, 78, 110, 0.38);
+  --grid-minor: rgba(29, 78, 110, 0.055);
+  --grid-major: rgba(29, 78, 110, 0.085);
+
+  /* Bay */
+  --bay-bg: #070b12;
+  --bay-deep: #0c1422;
+  --bay-panel: #0f1a2a;
+  --bay-text: #e8f1f7;
+  --bay-muted: #9fb2c2;
+  --bay-line: rgba(111, 231, 255, 0.16);
+  --bay-line-strong: rgba(111, 231, 255, 0.4);
+
+  /* Enerji */
+  --holo: #6fe7ff;
+  --holo-deep: #0e7c93; /* gündüz yüzeylerinde okunabilen holo tonu */
+  --reactor: #ffb547;
+  --reactor-deep: #9a5b00;
+
+  /* Canlı tema (bölüme göre değişiyor) */
+  --bg: var(--day-bg);
+  --fg: var(--ink);
+  --fg-muted: var(--ink-muted);
+  --line: var(--day-line);
+  --line-strong: var(--day-line-strong);
+  --accent: var(--holo-deep);
+
+  /* Yazı */
+  --ff-sans: var(--font-archivo), "Archivo", system-ui, sans-serif;
+  --ff-mono: var(--font-plex), "IBM Plex Mono", ui-monospace, monospace;
+  --ff-brand: var(--font-oxanium), "Oxanium", var(--ff-sans);
+  --fs-display: clamp(2.6rem, 1.15rem + 6.1vw, 7rem);
+  --fs-h1: clamp(2.35rem, 1.35rem + 4.1vw, 5.25rem);
+  --fs-h2: clamp(1.95rem, 1.3rem + 2.7vw, 3.6rem);
+  --fs-h3: clamp(1.2rem, 1.06rem + 0.6vw, 1.6rem);
+  --fs-lead: clamp(1.0625rem, 0.98rem + 0.4vw, 1.3rem);
+  --fs-body: clamp(1rem, 0.97rem + 0.12vw, 1.0625rem);
+  --fs-small: 0.875rem;
+  --fs-mono: 0.78rem;
+  --wdth-display: 118;
+  --wdth-head: 112;
+
+  /* Boşluk (8px taban) */
+  --s-1: 0.5rem;
+  --s-2: 1rem;
+  --s-3: 1.5rem;
+  --s-4: 2rem;
+  --s-5: 3rem;
+  --s-6: 4rem;
+  --s-7: 6rem;
+  --s-8: 8rem;
+  --section: clamp(5rem, 3rem + 7vw, 10rem);
+  --gutter: clamp(1rem, 0.4rem + 3vw, 3.5rem);
+  --maxw: 1440px;
+  --header-h: 68px;
+
+  /* Şekil */
+  --cut: 10px; /* panel ve butonların kırık köşe boyutu */
+
+  /* Hareket (src/lib/motion/tokens.ts ile aynı) */
+  --t-micro: 180ms;
+  --t-ui: 320ms;
+  --e-micro: cubic-bezier(0.33, 1, 0.68, 1);
+  --e-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --e-scene: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@media (min-width: 900px) {
+  :root {
+    --header-h: 76px;
+  }
+}
+
+[data-theme="bay"] {
+  --bg: var(--bay-bg);
+  --fg: var(--bay-text);
+  --fg-muted: var(--bay-muted);
+  --line: var(--bay-line);
+  --line-strong: var(--bay-line-strong);
+  --accent: var(--holo);
+  color-scheme: dark;
+}

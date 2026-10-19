@@ -1,0 +1,317 @@
+/* WebGL katmanı, HUD etiketleri ve aynı görünümü taşıyan SVG yedekleri */
+
+.lab-layer {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 100lvh;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.lab-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100lvh;
+}
+
+/* küçük viewport yüksekliği: telefon sahneleri bununla boyutlanıyor (home.css). */
+.lab-measure-small {
+  height: 100svh;
+}
+
+.lab-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  touch-action: pan-y;
+}
+
+/* ilk boyama yavaşça geliyor, svg poster yavaşça gidiyor. tek geçiş, ani değişim yok. */
+.lab-canvas[data-ready] {
+  transition: opacity 0s;
+}
+
+.lab-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.hud-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform, opacity;
+}
+
+.hud-label-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 46px;
+  height: 46px;
+  border-left: 1px solid var(--holo);
+  transform: translateY(-46px) skewX(-34deg);
+  transform-origin: bottom left;
+  opacity: 0.8;
+}
+
+.hud-label-line::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  bottom: -4px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--holo);
+  transform: skewX(34deg) rotate(45deg);
+}
+
+.hud-label-text {
+  position: absolute;
+  left: 30px;
+  top: -66px;
+  display: grid;
+  gap: 1px;
+  padding: 6px 10px 7px;
+  white-space: nowrap;
+  font-family: var(--ff-mono);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--bay-text);
+  background: rgba(7, 11, 18, 0.72);
+  border-left: 2px solid var(--reactor);
+}
+
+.hud-label-text [data-title] {
+  font-family: var(--ff-sans);
+  font-size: 0.86rem;
+  font-weight: 600;
+  font-variation-settings: "wdth" 108;
+}
+
+.hud-label-text [data-sub] {
+  color: var(--bay-muted);
+}
+
+/* yedekler webgl çalışmaya başlayınca işi ona bırakıyor. */
+.core-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.9s var(--e-scene);
+}
+
+html.lab-on .core-poster,
+html.lab-on .stage-fallback {
+  opacity: 0;
+}
+
+/* solduktan sonra gizli yedek kaydırırken artık layout'a girmiyor. */
+html.lab-on .stage-fallback {
+  content-visibility: hidden;
+}
+
+.poster-hud,
+.poster-ticks {
+  stroke: var(--blueprint);
+  stroke-width: 1;
+  opacity: 0.45;
+}
+
+.poster-axis {
+  stroke: var(--blueprint);
+  stroke-dasharray: 3 5;
+  opacity: 0.4;
+}
+
+.poster-reactor {
+  stroke: var(--reactor-deep);
+  stroke-width: 1.2;
+  opacity: 0.8;
+}
+
+.poster-core {
+  fill: var(--reactor);
+  stroke: var(--reactor-deep);
+}
+
+.poster-body {
+  fill: rgba(255, 255, 255, 0.86);
+}
+
+.poster-edge {
+  stroke: var(--blueprint);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+
+.poster-pattern {
+  stroke: #6d8aa0;
+  stroke-width: 1;
+}
+
+/* Modül glifi (hizmetler) */
+.module-glyph {
+  overflow: visible;
+}
+
+.module-glyph .glyph-side {
+  fill: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.module-glyph .glyph-top {
+  fill: color-mix(in srgb, var(--fg) 4%, transparent);
+  stroke: var(--accent);
+  stroke-width: 1.3;
+}
+
+.module-glyph .glyph-edge {
+  stroke: var(--accent);
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+
+.module-glyph .glyph-pattern {
+  stroke: var(--fg-muted);
+  stroke-width: 1;
+}
+
+.module-glyph .glyph-port {
+  fill: var(--reactor);
+}
+
+/* Mimari diyagram (çalışmalar) */
+.arch-diagram svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: var(--ff-sans);
+}
+
+.arch-edges path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.arch-node-shape {
+  fill: color-mix(in srgb, var(--bg) 70%, var(--accent) 6%);
+  stroke: var(--accent);
+  stroke-width: 1.3;
+  transition:
+    fill var(--t-ui) var(--e-micro),
+    stroke var(--t-ui) var(--e-micro);
+}
+
+.arch-node-label {
+  fill: var(--fg);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.arch-node-tech {
+  fill: var(--fg-muted);
+  font-family: var(--ff-mono);
+  font-size: 11.5px;
+}
+
+.arch-frame rect {
+  fill: none;
+  stroke: var(--reactor);
+  stroke-dasharray: 5 6;
+  stroke-width: 1.2;
+  opacity: 0.8;
+}
+
+.arch-frame text {
+  fill: var(--reactor);
+  font-family: var(--ff-mono);
+  font-size: 11px;
+}
+
+[data-theme="day"] .arch-frame rect,
+.surface-day .arch-frame rect {
+  stroke: var(--reactor-deep);
+}
+
+.surface-day .arch-frame text {
+  fill: var(--reactor-deep);
+}
+
+.arch-diagram [data-node].is-focus .arch-node-shape {
+  fill: color-mix(in srgb, var(--reactor) 22%, var(--bg));
+  stroke: var(--reactor-deep);
+}
+
+[data-theme="bay"] .arch-diagram [data-node].is-focus .arch-node-shape {
+  stroke: var(--reactor);
+}
+
+/* sağ kenara yakın etiketler sola doğru açılıyor. */
+.hud-label.is-flip .hud-label-line {
+  transform: translateY(-46px) skewX(34deg);
+  border-left: 0;
+  border-right: 1px solid var(--holo);
+  left: -46px;
+}
+
+.hud-label.is-flip .hud-label-line::before {
+  left: auto;
+  right: -4px;
+  transform: skewX(-34deg) rotate(45deg);
+}
+
+.hud-label.is-flip .hud-label-text {
+  left: auto;
+  right: 30px;
+  border-left: 0;
+  border-right: 2px solid var(--reactor);
+  text-align: right;
+}
+
+@media (max-width: 899px) {
+  .hud-label-text {
+    font-size: 0.66rem;
+    padding: 4px 8px 5px;
+  }
+  .hud-label-text [data-title] {
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 899px) {
+  .lab-hud[data-mode="arch"] [data-sub] {
+    display: none;
+  }
+}
+
+/* telefonda: aktif modül ortada ve etiketi sağa açılıyor. etiket ekrandan taşmasın
+   diye sağ yarının içinde alt satıra geçiyor. */
+.lab-hud[data-compact]:not([data-mode="arch"]) .hud-label-text {
+  white-space: normal;
+  width: max-content;
+  max-width: calc(50vw - 42px);
+}
+
+/* dar mimari görünümü: başlıklar düğümün üstünde ortalı, bağlantı çizgisi yok. */
+.lab-hud[data-mode="arch"][data-compact] .hud-label-line {
+  display: none;
+}
+
+.lab-hud[data-mode="arch"][data-compact] .hud-label-text {
+  left: 0;
+  right: auto;
+  top: -34px;
+  transform: translateX(-50%);
+  text-align: center;
+  border-left: 0;
+  border-bottom: 2px solid var(--reactor);
+}
