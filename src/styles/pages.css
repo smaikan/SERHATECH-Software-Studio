@@ -943,6 +943,41 @@
   padding-block: var(--s-6) var(--section);
 }
 
+.legal-copy > section {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+}
+
+.legal-copy section h2 {
+  margin: 0;
+  scroll-margin-top: calc(var(--header-h) + var(--s-4));
+}
+
+.legal-copy a {
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.legal-updated {
+  font-size: 0.875rem;
+}
+
+.legal-contents {
+  margin-block: var(--s-2);
+  padding: var(--s-3);
+  border: 1px solid var(--day-line-strong);
+  border-radius: 4px;
+}
+
+@media (min-width: 640px) {
+  .legal-contents ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--s-3);
+  }
+}
+
 .not-found {
   min-height: calc(80svh - var(--header-h));
   display: grid;

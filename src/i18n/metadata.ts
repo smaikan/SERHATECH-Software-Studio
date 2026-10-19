@@ -40,16 +40,16 @@ const copy = {
     "Describe your project briefly and leave a phone number if you would like a call back.",
   ],
   privacy: [
-    "Gizlilik bilgileri — Hazırlık alanı",
-    "Yayın öncesi tamamlanacak gizlilik bilgileri ve veri işleme açıklamaları.",
-    "Privacy information — Draft",
-    "Draft privacy information and data processing notes to be completed before publication.",
+    "Gizlilik politikası",
+    "İletişim formu, e-posta hizmetleri, tarayıcı tercihleri ve kişisel verilerin saklanmasına ilişkin gizlilik politikası.",
+    "Privacy policy",
+    "How contact enquiries, email services, browser preferences and personal data retention are handled.",
   ],
   kvkk: [
-    "KVKK aydınlatma alanı — Hazırlık alanı",
-    "Yayın öncesi tamamlanacak kişisel verilerin korunması ve işleme açıklamaları.",
-    "Data protection notice — Draft",
-    "Draft information about personal data protection and processing, to be completed before publication.",
+    "KVKK aydınlatma metni",
+    "Veri sorumlusu, kişisel veri işleme amaçları ve hukuki sebepler, alıcılar ve KVKK kapsamındaki başvuru haklarınız.",
+    "Data protection notice",
+    "The data controller, processing purposes and legal bases, recipients, and your rights under Türkiye’s data protection law.",
   ],
 } as const;
 

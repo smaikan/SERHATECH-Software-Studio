@@ -504,8 +504,8 @@ export function ContactForm({
         <p>
           {text(
             locale,
-            "Paylaştığınız bilgiler yalnızca talebinizi değerlendirmek ve size dönüş yapmak için kullanılır; telefon numarası yalnızca geri arama içindir.",
-            "The information you share is used only to assess your request and get back to you; the phone number is used only for a call back.",
+            "Bilgileriniz talebinizi değerlendirmek, size dönüş yapmak ve form güvenliğini sağlamak için işlenir. Telefon numarası isteğe bağlı geri arama içindir. Ayrıntılar:",
+            "Your information is processed to assess and answer your enquiry and keep the form secure. A phone number is for an optional call back. Details:",
           )}{" "}
           <Link prefetch={false} href={pathFor(locale, "kvkk")}>
             {text(locale, "Aydınlatma metni", "Data protection notice")}
