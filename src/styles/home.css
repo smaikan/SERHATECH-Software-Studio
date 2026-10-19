@@ -395,6 +395,36 @@
 
 /* telefonda: derli toplu kart, yapışık sahnenin altındaki boşluğa bir kart tam sığsın. */
 @media (max-width: 899px) {
+  /* Kart ritmi ve iki bay'in çıkış payı aynı mobil ölçeği izler. Sahnenin
+     yüksekliği değişmez; koreografi kart merkezlerini yerleşimden ölçer. */
+  .bay {
+    padding-bottom: var(--s-5);
+  }
+  .bay-cards {
+    padding-bottom: 22svh;
+  }
+  .bay + .threshold-up {
+    height: clamp(152px, 26svh, 260px);
+  }
+  .services-bay .bay-cards {
+    gap: clamp(96px, 16svh, 160px);
+  }
+  .services-bay .bay-card {
+    gap: 9px;
+    padding: 20px 18px 18px;
+  }
+  .services-bay .bay-card h3 {
+    font-size: 1.24rem;
+  }
+  .services-bay .bay-card p {
+    font-size: 0.93rem;
+  }
+  .services-bay .bay-card .bay-card-short {
+    font-size: 0.98rem;
+  }
+  .services-bay .bay-card-gains li {
+    font-size: 0.91rem;
+  }
   .bay-card {
     gap: 8px;
     padding: 18px 18px 16px;
