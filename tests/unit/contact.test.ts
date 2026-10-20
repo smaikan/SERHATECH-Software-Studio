@@ -28,12 +28,13 @@ function request(
   });
 }
 function configure() {
-  vi.stubEnv("RESEND_API_KEY", "test-key");
-  vi.stubEnv("CONTACT_FROM_EMAIL", "verified@example.com");
-  vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://redis.example.com");
-  vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "test-redis");
-  vi.stubEnv("RATE_LIMIT_SECRET", "test-secret-for-hmac");
-  vi.stubEnv("LEGAL_CONTENT_APPROVED", "true");
+  vi.stubEnv("CONTACT_FORM_ENABLED", "true");
+  vi.stubEnv("RESEND_API_KEY", "re_0123456789abcdefghijklmnopqrstuv");
+  vi.stubEnv("CONTACT_FROM_EMAIL", "SERHATECH Form <form@notify.serha.tech>");
+  vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://eu-contact.upstash.io");
+  vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "aB0123456789012345678901234567890123");
+  vi.stubEnv("RATE_LIMIT_SECRET", "aB0123456789012345678901234567890123");
+  vi.stubEnv("CONTACT_TO_EMAIL", "serhatvader@gmail.com");
 }
 describe("contact delivery boundary", () => {
   beforeEach(() => {
@@ -41,9 +42,11 @@ describe("contact delivery boundary", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
     vi.stubEnv("CONTACT_SITE_URL", "");
     vi.stubEnv("RESEND_API_KEY", "");
+    vi.stubEnv("CONTACT_FORM_ENABLED", "false");
     vi.stubEnv("CONTACT_TO_EMAIL", "");
     vi.stubEnv("TRUSTED_IP_HEADER", "");
     vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "info").mockImplementation(() => {});
   });
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -90,7 +93,7 @@ describe("contact delivery boundary", () => {
       "Your request has been received",
     );
     const email = JSON.parse(mock.mock.calls[1][1].body);
-    expect(email.to).toEqual(["iletisim@serha.tech"]);
+    expect(email.to).toEqual(["serhatvader@gmail.com"]);
     expect(email.text).toContain(
       "I need a custom order management application.",
     );
@@ -178,7 +181,7 @@ describe("contact delivery boundary", () => {
   });
   it("uses the server recipient setting instead of client data", async () => {
     configure();
-    vi.stubEnv("CONTACT_TO_EMAIL", "configured@example.com");
+    vi.stubEnv("CONTACT_TO_EMAIL", "configured@serha.tech");
     const mock = vi
       .fn()
       .mockResolvedValueOnce(Response.json({ result: 1 }))
@@ -189,7 +192,7 @@ describe("contact delivery boundary", () => {
         .status,
     ).toBe(200);
     expect(JSON.parse(mock.mock.calls[1][1].body).to).toEqual([
-      "configured@example.com",
+      "configured@serha.tech",
     ]);
   });
   it("fails closed when Redis is unavailable", async () => {
@@ -198,6 +201,63 @@ describe("contact delivery boundary", () => {
     vi.stubGlobal("fetch", mock);
     expect((await handleContact(request(valid()))).status).toBe(503);
     expect(mock).toHaveBeenCalledTimes(1);
+  });
+  it("never contacts providers while the switch is off", async () => {
+    configure();
+    vi.stubEnv("CONTACT_FORM_ENABLED", "false");
+    const mock = vi.fn();
+    vi.stubGlobal("fetch", mock);
+    expect((await handleContact(request(valid()))).status).toBe(503);
+    expect(mock).not.toHaveBeenCalled();
+  });
+  it.each([401, 429, 500])("handles Resend status %s without claiming success", async (status) => {
+    configure();
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(Response.json({ result: 1 }))
+      .mockResolvedValueOnce(Response.json({ message: "private provider details" }, { status })));
+    const response = await handleContact(request(valid()));
+    expect(response.status).toBe(503);
+    expect((await response.json()).message).toContain("doğrulanamadı");
+    const log = vi.mocked(console.error).mock.calls[0][0];
+    expect(log).toEqual({ operationId: expect.any(String), stage: "resend", statusCode: status });
+  });
+  it.each(["rate-limit", "resend"])("handles a %s timeout and logs no personal data", async (stage) => {
+    configure();
+    const mock = vi.fn();
+    if (stage === "resend") mock.mockResolvedValueOnce(Response.json({ result: 1 }));
+    mock.mockRejectedValueOnce(new DOMException("contains secrets and personal data", "TimeoutError"));
+    vi.stubGlobal("fetch", mock);
+    const req = request(valid());
+    req.headers.set("accept-language", "en");
+    const response = await handleContact(req);
+    expect(response.status).toBe(504);
+    expect((await response.json()).message).toContain(stage === "resend" ? "Couldn’t confirm" : "was not sent");
+    expect(vi.mocked(console.error).mock.calls[0][0]).toEqual({ operationId: expect.any(String), stage, statusCode: null });
+    expect(mock).toHaveBeenCalledTimes(stage === "resend" ? 2 : 1);
+  });
+  it("rejects a list of proxy IPs instead of trusting the first address", async () => {
+    configure();
+    vi.stubEnv("TRUSTED_IP_HEADER", "X-Real-IP");
+    const req = request(valid());
+    req.headers.set("X-Real-IP", "203.0.113.1, 203.0.113.2");
+    const mock = vi.fn();
+    vi.stubGlobal("fetch", mock);
+    expect((await handleContact(req)).status).toBe(503);
+    expect(mock).not.toHaveBeenCalled();
+  });
+  it("keeps the same provider key on retry", async () => {
+    configure();
+    const mock = vi.fn()
+      .mockResolvedValueOnce(Response.json({ result: 1 }))
+      .mockRejectedValueOnce(new DOMException("timeout", "TimeoutError"))
+      .mockResolvedValueOnce(Response.json({ result: 1 }))
+      .mockResolvedValueOnce(Response.json({ id: "receipt" }));
+    vi.stubGlobal("fetch", mock);
+    const data = valid();
+    expect((await handleContact(request(data))).status).toBe(504);
+    expect((await handleContact(request(data))).status).toBe(200);
+    expect(mock.mock.calls[1][1].headers["Idempotency-Key"]).toBe(mock.mock.calls[3][1].headers["Idempotency-Key"]);
+    expect(mock.mock.calls[1][1].body).toBe(mock.mock.calls[3][1].body);
   });
   it("enforces shared rate limits before sending", async () => {
     configure();
@@ -253,7 +313,7 @@ describe("contact delivery boundary", () => {
     expect(redis.body).not.toContain("127.0.0.1");
     const email = JSON.parse(mock.mock.calls[1][1].body);
     expect(email.reply_to).toEqual(["test@example.com"]);
-    expect(email.to).toEqual(["iletisim@serha.tech"]);
+    expect(email.to).toEqual(["serhatvader@gmail.com"]);
     expect(email.text).toContain("Ad soyad: Test Kullanıcısı");
     expect(email.text).toContain(valid().message);
     expect(email.html).toContain("Test Kullanıcısı");
@@ -281,7 +341,7 @@ describe("contact delivery boundary", () => {
     );
     expect(response.status).toBe(200);
     const email = JSON.parse(mock.mock.calls[1][1].body);
-    expect(email.to).toEqual(["iletisim@serha.tech"]);
+    expect(email.to).toEqual(["serhatvader@gmail.com"]);
     expect(email.text).toContain("Şirket: Test Marka");
     expect(email.text).toContain("Başlangıç: 1–3 ay içinde");
     expect(email.subject).toContain("Özel web uygulamaları");
@@ -368,14 +428,29 @@ describe("contact delivery boundary", () => {
   it("production requires a trusted proxy header", async () => {
     configure();
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "http://localhost:3000");
-    expect((await handleContact(request(valid()))).status).toBe(503);
+    vi.stubEnv("CONTACT_SITE_URL", "https://serha.tech");
+    expect((await handleContact(request(valid(), { origin: "https://serha.tech" }))).status).toBe(503);
   });
   it("production rejects missing client identity", async () => {
     configure();
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "http://localhost:3000");
+    vi.stubEnv("CONTACT_SITE_URL", "https://serha.tech");
     vi.stubEnv("TRUSTED_IP_HEADER", "x-real-ip");
-    expect((await handleContact(request(valid()))).status).toBe(503);
+    expect((await handleContact(request(valid(), { origin: "https://serha.tech" }))).status).toBe(503);
+  });
+  it("production accepts a single proxy IP and logs only the provider receipt metadata", async () => {
+    configure();
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("CONTACT_SITE_URL", "https://serha.tech");
+    vi.stubEnv("TRUSTED_IP_HEADER", "X-Real-IP");
+    const mock = vi.fn()
+      .mockResolvedValueOnce(Response.json({ result: 1 }))
+      .mockResolvedValueOnce(Response.json({ id: "receipt" }));
+    vi.stubGlobal("fetch", mock);
+    const req = request(valid(), { origin: "https://serha.tech" });
+    req.headers.set("X-Real-IP", "2001:db8::1");
+    expect((await handleContact(req)).status).toBe(200);
+    expect(mock.mock.calls[0][1].body).not.toContain("2001:db8::1");
+    expect(vi.mocked(console.info).mock.calls[0][0]).toEqual({ operationId: expect.any(String), stage: "accepted", statusCode: 200, resendMessageId: "receipt" });
   });
 });

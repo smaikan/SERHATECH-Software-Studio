@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { contactConfigIssues } from "../src/lib/contact-config.mjs";
 
 const required = [
   "NEXT_PUBLIC_COMPANY_NAME",
@@ -13,6 +14,9 @@ const required = [
 ];
 const missing = required.filter((name) => !process.env[name]);
 const issues = missing.map((name) => `${name} eksik.`);
+issues.push(...contactConfigIssues({ ...process.env, NODE_ENV: "production" }));
+if (process.env.CONTACT_FORM_ENABLED !== "true")
+  issues.push("CONTACT_FORM_ENABLED kapalı; teslimat doğrulaması sonrası ayrıca açılmalı.");
 if (process.env.SITE_INDEXING_ENABLED !== "true")
   issues.push(
     "SITE_INDEXING_ENABLED kapalı; yayına hazırlıkta ayrıca açılmalı.",

@@ -1,13 +1,12 @@
 import { text, type Locale } from "@/i18n/routing";
-import { createHmac } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 import { isIP } from "node:net";
 import {
-  contactSchema,
   createContactSchema,
   type ContactPayload,
 } from "./contact-schema";
 import { services } from "@/content/studio";
-import { site } from "@/config/site";
+import { contactConfigIssues } from "./contact-config.mjs";
 
 const MAX_BYTES = 16_384;
 
@@ -69,27 +68,15 @@ ${
   return { subject, text: plain, html };
 }
 export function contactIsConfigured() {
-  return Boolean(
-    process.env.RESEND_API_KEY &&
-    process.env.CONTACT_FROM_EMAIL &&
-    process.env.UPSTASH_REDIS_REST_URL &&
-    process.env.UPSTASH_REDIS_REST_TOKEN &&
-    process.env.RATE_LIMIT_SECRET &&
-    contactSchema.shape.email.safeParse(
-      process.env.CONTACT_TO_EMAIL || site.email,
-    ).success &&
-    (process.env.NODE_ENV !== "production" ||
-      ((process.env.CONTACT_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL) &&
-        process.env.TRUSTED_IP_HEADER)),
-  );
+  return process.env.CONTACT_FORM_ENABLED === "true" && contactConfigIssues(process.env).length === 0;
 }
 
 const rateScript = `
+if tonumber(redis.call('GET', KEYS[1]) or '0') >= 5 or tonumber(redis.call('GET', KEYS[2]) or '0') >= 50 then return 0 end
 local visitor = redis.call('INCR', KEYS[1])
 if visitor == 1 then redis.call('EXPIRE', KEYS[1], 600) end
 local global = redis.call('INCR', KEYS[2])
 if global == 1 then redis.call('EXPIRE', KEYS[2], 600) end
-if visitor > 5 or global > 50 then return 0 end
 return 1`;
 
 function json(message: string, status: number, extra = {}, headers = {}) {
@@ -207,12 +194,15 @@ export async function handleContact(request: Request) {
   if (!contactIsConfigured()) return json(unavailable, 503);
   const header = process.env.TRUSTED_IP_HEADER;
   const ip = header
-    ? request.headers.get(header)?.split(",")[0].trim()
+    ? request.headers.get(header)?.trim()
     : "127.0.0.1";
   if (!ip || !isIP(ip)) return json(unavailable, 503);
   const visitor = createHmac("sha256", process.env.RATE_LIMIT_SECRET!)
     .update(ip)
     .digest("hex");
+  const operationId = randomUUID();
+  let stage = "rate-limit";
+  let statusCode: number | null = null;
   try {
     const limit = await fetch(process.env.UPSTASH_REDIS_REST_URL!, {
       method: "POST",
@@ -230,9 +220,10 @@ export async function handleContact(request: Request) {
         "studio:contact:global",
       ]),
     });
+    statusCode = limit.status;
     if (!limit.ok) throw new Error("rate-limit-service");
     const result = (await limit.json()) as { result?: number; error?: string };
-    if (result.error || typeof result.result !== "number")
+    if (result.error || (result.result !== 0 && result.result !== 1))
       throw new Error("rate-limit-response");
     if (result.result !== 1)
       return json(
@@ -249,6 +240,8 @@ export async function handleContact(request: Request) {
     const service =
       services.find((item) => item.slug === data.service)?.title || data.service;
     const email = composeEmail(data, service);
+    stage = "resend";
+    statusCode = null;
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       signal: AbortSignal.timeout(10000),
@@ -261,7 +254,7 @@ export async function handleContact(request: Request) {
       },
       body: JSON.stringify({
         from: process.env.CONTACT_FROM_EMAIL,
-        to: [process.env.CONTACT_TO_EMAIL || site.email],
+        to: [process.env.CONTACT_TO_EMAIL],
         reply_to: [data.email],
         subject: email.subject,
         text: email.text,
@@ -272,9 +265,11 @@ export async function handleContact(request: Request) {
         ],
       }),
     });
+    statusCode = response.status;
     if (!response.ok) throw new Error("delivery-service");
     const receipt = (await response.json()) as { id?: string };
-    if (!receipt.id) throw new Error("delivery-response");
+    if (typeof receipt.id !== "string" || !/^[a-zA-Z0-9-]{1,128}$/.test(receipt.id)) throw new Error("delivery-response");
+    console.info({ operationId, stage: "accepted", statusCode, resendMessageId: receipt.id });
     return json(
       data.callback
         ? text(
@@ -289,8 +284,13 @@ export async function handleContact(request: Request) {
           ),
       200,
     );
-  } catch {
-    console.error("contact_delivery_unavailable");
-    return json(unavailable, 503);
+  } catch (error) {
+    console.error({ operationId, stage, statusCode });
+    const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+    return json(stage === "resend" ? text(
+      locale,
+      "Gönderim sonucu doğrulanamadı. Formunuz korundu; aynı içerikle yeniden deneyebilirsiniz.",
+      "Couldn’t confirm the submission. Your form has been kept; you can retry with the same content.",
+    ) : unavailable, timedOut ? 504 : 503);
   }
 }

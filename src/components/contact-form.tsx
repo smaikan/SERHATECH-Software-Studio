@@ -45,6 +45,7 @@ export function ContactForm({
   const form = useRef<HTMLFormElement>(null);
   const startedAt = useRef(0);
   const submissionId = useRef("");
+  const submittedContent = useRef<string | null>(null);
   const pending = useRef(false);
   const pointerHeld = useRef(false);
   const [errors, setErrors] = useState<ContactFieldErrors>({});
@@ -124,6 +125,15 @@ export function ContactForm({
       return;
     }
     setErrors({});
+    // Only the normalized email content determines whether this is a retry.
+    const { name, company, email, phone, callback, service, message, timeline } = parsed.data;
+    const content = { name, company, email, phone, callback, service, message, timeline };
+    const fingerprint = JSON.stringify(content);
+    if (submittedContent.current !== fingerprint) {
+      submissionId.current = submissionUuid();
+      submittedContent.current = fingerprint;
+    }
+    parsed.data.submissionId = submissionId.current;
     setSending(true);
     try {
       const response = await fetch("/api/contact", {
@@ -152,6 +162,7 @@ export function ContactForm({
         setCountry(defaultCountry);
         startedAt.current = Date.now();
         submissionId.current = submissionUuid();
+        submittedContent.current = null;
       }
     } catch {
       setStatus({ ok: false, message: unconfirmed() });

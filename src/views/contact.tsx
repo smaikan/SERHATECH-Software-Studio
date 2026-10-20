@@ -87,8 +87,8 @@ export default function ContactPage({
           <p>
             {text(
               locale,
-              "Ad, e-posta ve mesaj yeterlidir; diğer alanlar isteğe bağlıdır. Talebiniz doğrudan değerlendirilir ve size dönüş yapılır.",
-              "Name, email and a message are enough; the other fields are optional. Your request is reviewed directly and you will get a reply.",
+              "Ad, e-posta, konu ve mesaj zorunludur; diğer alanlar isteğe bağlıdır. Geri arama isterseniz telefon numaranızı da ekleyin. Talebiniz doğrudan değerlendirilir ve size dönüş yapılır.",
+              "Name, email, topic and message are required; the other fields are optional. Add a phone number if you would like a call back. Your request is reviewed directly and you will get a reply.",
             )}
           </p>
           <div

@@ -10,6 +10,7 @@ const eslintConfig = defineConfig([
     // eslint-config-next'in varsayılan ignore'ları:
     ".next/**",
     ".next-e2e/**",
+    ".next-contact/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

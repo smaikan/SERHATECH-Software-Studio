@@ -64,13 +64,14 @@ Copy `.env.example` to `.env.local` and fill it in. `.env.local` stays out of ve
 | `COMPANY_LEGAL_NAME` | Registered legal name (read into `site.legalName`; not shown on any page yet) |
 | `LEGAL_CONTENT_APPROVED` | `true` only after the draft privacy and KVKK pages are replaced with approved text |
 | `NEXT_PUBLIC_GITHUB_URL`, `NEXT_PUBLIC_LINKEDIN_URL` | Optional profile links (read into `site.social`; not shown on any page yet) |
-| `RESEND_API_KEY` | Resend API key for contact email |
-| `CONTACT_FROM_EMAIL` | Sender, e.g. `Serhatech <form@serha.tech>` once the domain is verified in Resend |
-| `CONTACT_TO_EMAIL` | Recipient; defaults to `site.email` (`iletisim@serha.tech`) |
+| `CONTACT_FORM_ENABLED` | Send switch; defaults to `false`, set to `true` for live delivery after verification |
+| `RESEND_API_KEY` | Resend API key restricted to sending from `notify.serha.tech` |
+| `CONTACT_FROM_EMAIL` | Sender: `SERHATECH Form <form@notify.serha.tech>` after domain verification |
+| `CONTACT_TO_EMAIL` | Required fixed recipient: `serhatvader@gmail.com`; public address stays `iletisim@serha.tech` |
 | `CONTACT_SITE_URL` | Optional explicit origin accepted by the form; defaults to `NEXT_PUBLIC_SITE_URL` |
-| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Redis for rate limiting |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Dedicated European Redis database for rate limiting; HTTPS `*.upstash.io` endpoint and secret token |
 | `RATE_LIMIT_SECRET` | At least 32 characters; hashes visitor IPs |
-| `TRUSTED_IP_HEADER` | Production only: the header your proxy overwrites with the client IP (e.g. `X-Real-IP` behind Caddy, `CF-Connecting-IP` behind Cloudflare) |
+| `TRUSTED_IP_HEADER` | `X-Real-IP`, overwritten by Caddy; Cloudflare visitor headers are accepted only from Cloudflare network peers |
 
 Two checks report what is still missing, without sending anything:
 
@@ -91,7 +92,9 @@ The email arrives at `CONTACT_TO_EMAIL` from `CONTACT_FROM_EMAIL`, with **Reply-
 - A table with name, company, email, phone (a tap-to-call link), call back, topic and start, followed by the message
 - A `callback=yes|no` tag in Resend
 
-Until the Resend and Redis settings are present, the form says that delivery is not enabled and refuses submissions; it never shows a false success. The email address on the contact page can always be used directly or copied with one click.
+Sending requires `CONTACT_FORM_ENABLED=true` and valid Resend, Redis and proxy configuration. Placeholder keys, a test sender and invalid service URLs are rejected. Redis failure prevents sending. A timeout after contacting Resend is reported as unconfirmed and keeps the form contents. Retries of unchanged content use the same submission ID; edited content gets a new ID. Resend deduplicates the same ID and payload for 24 hours. IDs live in the current page; reloading starts a new submission. Acceptance confirms that Resend accepted the email, not that Gmail received it.
+
+The public email address can always be used directly or copied. See [the deployment and Gmail acceptance checklist](deploy/contact-runbook.md) and [the site-specific Caddy blocks](deploy/Caddyfile.serha.tech).
 
 ## Project structure
 
@@ -139,7 +142,7 @@ Each page has its own `lang`, title, description, Open Graph data and share imag
 
 ## Before going live
 
-- Verify `serha.tech` in Resend (SPF and DKIM DNS records), then set the Resend, Redis and `TRUSTED_IP_HEADER` values
+- Verify the sending subdomain `notify.serha.tech` in Resend (SPF/DKIM), preserve root MX and forwarding, then set the Resend, Redis and `TRUSTED_IP_HEADER` values; verify Gmail delivery before leaving the send switch enabled. DMARC is recommended separately and does not gate contact delivery.
 - Set `NEXT_PUBLIC_SITE_URL=https://serha.tech` and `COMPANY_LEGAL_NAME`
 - Replace the draft privacy and KVKK pages with approved legal text, then set `LEGAL_CONTENT_APPROVED=true`
 - Add the founder portrait and real project screenshots
